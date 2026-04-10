@@ -1,19 +1,21 @@
 package com.example.downforce;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.GridLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -43,10 +45,10 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        int itemId = item.getItemId();
-        if (itemId == R.id.calender) {
-            Intent calender = new Intent(this, MainActivity.class);
-            startActivity(calender);
+        if (item.getItemId() == R.id.calender) {
+            Toast.makeText(this, "Refreshing...", Toast.LENGTH_SHORT).show();
+            fetchRacesAPI();
+            return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -57,13 +59,18 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle("Downforce");
+        }
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
-        // Initialize Views
         raceTextView = findViewById(R.id.text);
         image = findViewById(R.id.image);
         racesGrid = findViewById(R.id.races_grid);
@@ -74,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void fetchRacesAPI() {
         RequestQueue queue = Volley.newRequestQueue(this);
-        String url = "https://api.openf1.org/v1/meetings?year=2024";
+        String url = "https://api.openf1.org/v1/meetings?year=2026";
 
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
                 response -> {
@@ -88,24 +95,26 @@ public class MainActivity extends AppCompatActivity {
                             String name = obj.getString("meeting_name");
                             String location = obj.getString("location");
                             String date = obj.getString("date_end");
+                            String circuit = obj.getString("circuit_image");
                             String flag = obj.optString("country_flag", "");
 
-                            Race race = new Race(name, location, date, flag);
+                            Race race = new Race(name, location,circuit, date, flag);
                             races.add(race);
                             
-                            // Add to Grid after the first one (which is featured)
                             if (i > 0) {
                                 addRaceToGrid(race);
                             }
                         }
 
-                        // Update Featured Race (First one)
                         if (!races.isEmpty()) {
                             Race nextRace = races.get(0);
                             raceTextView.setText(nextRace.getName() + "\n" + nextRace.getLocation());
                             if (!nextRace.getFlag().isEmpty()) {
                                 Picasso.get().load(nextRace.getFlag()).into(image);
                             }
+                            
+                            LinearLayout nextRaceContainer = findViewById(R.id.next_race_container);
+                            nextRaceContainer.setOnClickListener(v -> showRaceDetailDialog(nextRace));
                         }
 
                     } catch (Exception e) {
@@ -120,7 +129,6 @@ public class MainActivity extends AppCompatActivity {
     private void addRaceToGrid(Race race) {
         View itemView = LayoutInflater.from(this).inflate(R.layout.item_race, racesGrid, false);
         
-        // Adjust layout params for 2-column grid
         GridLayout.LayoutParams params = new GridLayout.LayoutParams();
         params.width = 0;
         params.height = GridLayout.LayoutParams.WRAP_CONTENT;
@@ -138,6 +146,37 @@ public class MainActivity extends AppCompatActivity {
             Picasso.get().load(race.getFlag()).into(flag);
         }
 
+        itemView.setBackgroundResource(R.drawable.rounded_card_bg);
+        itemView.setOnClickListener(v -> showRaceDetailDialog(race));
+
         racesGrid.addView(itemView);
+    }
+
+    private void showRaceDetailDialog(Race race) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_race_detail, null);
+        builder.setView(dialogView);
+
+        ImageView flagImg = dialogView.findViewById(R.id.dialog_flag);
+        TextView nameTxt = dialogView.findViewById(R.id.dialog_race_name);
+        TextView locationTxt = dialogView.findViewById(R.id.dialog_location);
+        TextView dateTxt = dialogView.findViewById(R.id.dialog_date);
+        Button closeBtn = dialogView.findViewById(R.id.dialog_close_button);
+
+        nameTxt.setText(race.getName());
+        locationTxt.setText("📍 " + race.getLocation());
+        dateTxt.setText("📅 " + race.getDate());
+        
+        if (!race.getFlag().isEmpty()) {
+            Picasso.get().load(race.getFlag()).into(flagImg);
+        }
+
+        AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+        
+        closeBtn.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
     }
 }

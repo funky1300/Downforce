@@ -4,7 +4,6 @@
     <item
         android:id="@+id/calender"
         android:orderInCategory="100"
-        android:title="calender"
-        app:showAsAction="never"
-        > </item>
+        android:title="Calendar"
+        app:showAsAction="never" />
 </menu>

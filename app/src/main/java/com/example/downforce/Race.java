@@ -17,18 +17,23 @@ public class Race {
     public String name;
     public String location;
     public String flag;
+    public String circuit;
     public ZonedDateTime date;
 
-    public Race(String name, String location, String dateString, String flag) {
+    public Race(String name, String location, String dateString, String circuit, String flag) {
         this.name = name;
         this.location = location;
         this.flag = flag;
+        this.circuit = circuit;
         this.date = ZonedDateTime.parse(dateString);
     }
 
     public String getName() { return name; }
     public String getLocation() { return location; }
     public String getFlag() { return flag; }
+
+    public String getCircuit() { return circuit; }
+
 
     public String getDate() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
