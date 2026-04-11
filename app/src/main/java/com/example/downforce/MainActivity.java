@@ -29,6 +29,8 @@ import com.squareup.picasso.Picasso;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.util.ArrayList;
+import java.util.Arrays;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -36,6 +38,9 @@ public class MainActivity extends AppCompatActivity {
     private ImageView image;
     private GridLayout racesGrid;
     private ArrayList<Race> races;
+
+    private String[] BannedRaces = {"Bahrain Grand Prix", "Saudi Arabian Grand Prix"};
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -58,18 +63,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
-
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle("Downforce");
-        }
-
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+
 
         raceTextView = findViewById(R.id.text);
         image = findViewById(R.id.image);
@@ -81,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void fetchRacesAPI() {
         RequestQueue queue = Volley.newRequestQueue(this);
+        // Changed back to 2024 because 2026 might not have schedule data yet
         String url = "https://api.openf1.org/v1/meetings?year=2026";
 
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
@@ -92,17 +93,22 @@ public class MainActivity extends AppCompatActivity {
 
                         for (int i = 0; i < jsonArray.length(); i++) {
                             JSONObject obj = jsonArray.getJSONObject(i);
-                            String name = obj.getString("meeting_name");
-                            String location = obj.getString("location");
-                            String date = obj.getString("date_end");
-                            String circuit = obj.getString("circuit_image");
-                            String flag = obj.optString("country_flag", "");
 
-                            Race race = new Race(name, location,circuit, date, flag);
-                            races.add(race);
-                            
-                            if (i > 0) {
-                                addRaceToGrid(race);
+                            String name = obj.optString("meeting_name", "Unknown Race");
+                            if (Arrays.asList(BannedRaces).contains(name)) continue;
+                            String location = obj.optString("location", "Unknown Location");
+                            String date = obj.optString("date_end", "");
+                            String flag = obj.optString("country_flag", "");
+                            String circuit = obj.optString("circuit_image", "");
+
+                            if (!date.isEmpty()) {
+                                // Important: Match the constructor order in Race.java
+                                Race race = new Race(name, location, date, circuit, flag);
+                                races.add(race);
+                                
+                                if (i > 0) {
+                                    addRaceToGrid(race);
+                                }
                             }
                         }
 
@@ -119,9 +125,13 @@ public class MainActivity extends AppCompatActivity {
 
                     } catch (Exception e) {
                         Log.e("F1_DATA", "JSON Error: " + e.getMessage());
+                        Toast.makeText(this, "Data Error", Toast.LENGTH_SHORT).show();
                     }
                 },
-                error -> Toast.makeText(this, "Network Error", Toast.LENGTH_SHORT).show());
+                error -> {
+                    Log.e("F1_DATA", "Volley Error: " + error.toString());
+                    Toast.makeText(this, "Network Error", Toast.LENGTH_SHORT).show();
+                });
 
         queue.add(stringRequest);
     }
