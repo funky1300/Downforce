@@ -58,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    //do not touch this function!!!!
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-
+        //^^^do not touch this function^^^
 
 
         raceTextView = findViewById(R.id.text);
@@ -81,21 +82,19 @@ public class MainActivity extends AppCompatActivity {
 
     private void fetchRacesAPI() {
         RequestQueue queue = Volley.newRequestQueue(this);
-        // Changed back to 2024 because 2026 might not have schedule data yet
         String url = "https://api.openf1.org/v1/meetings?year=2026";
 
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
                 response -> {
                     try {
                         JSONArray jsonArray = new JSONArray(response);
-                        races.clear();
-                        racesGrid.removeAllViews();
+
 
                         for (int i = 0; i < jsonArray.length(); i++) {
                             JSONObject obj = jsonArray.getJSONObject(i);
 
                             String name = obj.optString("meeting_name", "Unknown Race");
-                            if (Arrays.asList(BannedRaces).contains(name)) continue;
+                            if (Arrays.asList(BannedRaces).contains(name)) continue; //--> check for banned races from list
                             String location = obj.optString("location", "Unknown Location");
                             String date = obj.optString("date_end", "");
                             String flag = obj.optString("country_flag", "");
@@ -105,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
                                 // Important: Match the constructor order in Race.java
                                 Race race = new Race(name, location, date, circuit, flag);
                                 races.add(race);
-                                
+
                                 if (i > 0) {
                                     addRaceToGrid(race);
                                 }
@@ -118,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
                             if (!nextRace.getFlag().isEmpty()) {
                                 Picasso.get().load(nextRace.getFlag()).into(image);
                             }
-                            
+
                             LinearLayout nextRaceContainer = findViewById(R.id.next_race_container);
                             nextRaceContainer.setOnClickListener(v -> showRaceDetailDialog(nextRace));
                         }
@@ -171,6 +170,7 @@ public class MainActivity extends AppCompatActivity {
         TextView nameTxt = dialogView.findViewById(R.id.dialog_race_name);
         TextView locationTxt = dialogView.findViewById(R.id.dialog_location);
         TextView dateTxt = dialogView.findViewById(R.id.dialog_date);
+        ImageView circuitImg = dialogView.findViewById(R.id.dialog_circuit);
         Button closeBtn = dialogView.findViewById(R.id.dialog_close_button);
 
         nameTxt.setText(race.getName());
