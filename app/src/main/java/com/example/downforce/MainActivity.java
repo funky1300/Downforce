@@ -1,5 +1,6 @@
 package com.example.downforce;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -54,6 +55,14 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Refreshing...", Toast.LENGTH_SHORT).show();
             fetchRacesAPI();
             return true;
+        }
+        if(item.getItemId() == R.id.stats){
+            Intent goGu = new Intent(this, downforce_stats.class);
+            startActivity(goGu);
+        }
+        if(item.getItemId() == R.id.bet_f1){
+            Intent goGu = new Intent(this, bet_f1.class);
+            startActivity(goGu);
         }
         return super.onOptionsItemSelected(item);
     }

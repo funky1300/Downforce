@@ -4,6 +4,18 @@
     <item
         android:id="@+id/calender"
         android:orderInCategory="100"
-        android:title="Calendar"
+        android:title="calendar"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/stats"
+        android:orderInCategory="100"
+        android:title="stats"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/bet_f1"
+        android:orderInCategory="100"
+        android:title="bet f1"
         app:showAsAction="never" />
 </menu>
