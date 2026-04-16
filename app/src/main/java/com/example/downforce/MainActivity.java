@@ -180,6 +180,9 @@ public class MainActivity extends AppCompatActivity {
         if (!race.getFlag().isEmpty()) {
             Picasso.get().load(race.getFlag()).into(flagImg);
         }
+        if (!race.getCircuit().isEmpty()) {
+            Picasso.get().load(race.getCircuit()).into(circuitImg);
+        }
 
         AlertDialog dialog = builder.create();
         if (dialog.getWindow() != null) {
