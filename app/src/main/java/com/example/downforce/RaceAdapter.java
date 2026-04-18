@@ -30,6 +30,7 @@ public class RaceAdapter extends RecyclerView.Adapter<RaceAdapter.RaceViewHolder
         Race race = races.get(position);
         holder.raceName.setText(race.getName());
         holder.raceDate.setText(race.getDate() + " - " + race.getLocation());
+
         
         if (race.getFlag() != null && !race.getFlag().isEmpty()) {
             Picasso.get().load(race.getFlag()).into(holder.flagImage);

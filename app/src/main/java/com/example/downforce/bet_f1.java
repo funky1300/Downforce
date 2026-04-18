@@ -44,11 +44,6 @@ public class bet_f1 extends AppCompatActivity {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
-            // Inside bet_f1.java onCreate, after the insets listener:
-            getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.fragment_container, new BettingFragment())
-                    .commit();
         });
         //^^^do not touch this function^^^
 

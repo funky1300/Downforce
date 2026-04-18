@@ -17,11 +17,10 @@
         android:textSize="24sp"
         android:textStyle="bold" />
 
-    <FrameLayout
-        android:id="@+id/fragment_container"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_height="match_parent">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -177,9 +176,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:backgroundTint="#DBE2EF"
+                    android:background="@drawable/button_design"
                     android:text="BET ON RACE"
-                    android:textColor="#112D4E"
+                    android:textColor="@color/accent_teal"
                     android:textStyle="bold" />
 
             </LinearLayout>
@@ -312,9 +311,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:backgroundTint="#DBE2EF"
+                    android:background="@drawable/button_design"
                     android:text="BET ON CHAMPIONSHIP"
-                    android:textColor="#112D4E"
+                    android:textColor="@color/accent_teal"
                     android:textStyle="bold" />
 
             </LinearLayout>
@@ -351,6 +350,6 @@
             </LinearLayout>
 
         </LinearLayout>
-    </FrameLayout>
+    </ScrollView>
 
 </LinearLayout>

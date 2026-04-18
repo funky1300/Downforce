@@ -81,6 +81,8 @@ public class MainActivity extends AppCompatActivity {
         //^^^do not touch this function^^^
 
 
+
+
         raceTextView = findViewById(R.id.text);
         image = findViewById(R.id.image);
         racesGrid = findViewById(R.id.races_grid);
@@ -195,7 +197,7 @@ public class MainActivity extends AppCompatActivity {
 
         AlertDialog dialog = builder.create();
         if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setBackgroundDrawableResource(R.drawable.alertdialogbox);
         }
         
         closeBtn.setOnClickListener(v -> dialog.dismiss());
