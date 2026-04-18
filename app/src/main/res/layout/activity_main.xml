@@ -8,10 +8,15 @@
     android:background="@color/primary_dark"
     android:orientation="vertical">
 
-
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:id="@+id/bnt"
+        android:background="@drawable/button_design"
+        android:text="send notification"> </Button>
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="670dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -92,4 +97,5 @@
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
+
 </LinearLayout>

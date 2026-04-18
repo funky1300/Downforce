@@ -1,12 +1,16 @@
 package com.example.downforce;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.GridLayout;
 import android.widget.ImageView;
@@ -14,9 +18,12 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -31,12 +38,15 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 
 
-public class MainActivity extends AppCompatActivity {
+
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private TextView raceTextView;
     private ImageView image;
+    private Button bnt;
     private GridLayout racesGrid;
     private ArrayList<Race> races;
 
@@ -82,13 +92,21 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-
+        bnt = findViewById(R.id.bnt);
         raceTextView = findViewById(R.id.text);
         image = findViewById(R.id.image);
         racesGrid = findViewById(R.id.races_grid);
 
         races = new ArrayList<>();
         fetchRacesAPI();
+
+        bnt.setOnClickListener(this);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
+            }
+        }
     }
 
     private void fetchRacesAPI() {
@@ -202,5 +220,16 @@ public class MainActivity extends AppCompatActivity {
         
         closeBtn.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
+    }
+
+    @Override
+    public void onClick(View v) {
+        if(v.getId() == R.id.bnt)
+        {
+            notification_handler.sendNotificationNow(this, "title", "message");
+            Calendar calendar = Calendar.getInstance();
+            calendar.set(2026,4,18,17,16);
+            notification_handler.sendNotification(this, "title", "message",calendar , "button text");
+        }
     }
 }
