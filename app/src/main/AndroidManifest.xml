@@ -31,6 +31,14 @@
         <receiver
             android:name=".NotificationReceiver"
             android:exported="false" />
+        <receiver
+            android:name=".RaceActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.example.downforce.RACE_WATCHED" />
+                <action android:name="com.example.downforce.RACE_SKIPPED" />
+            </intent-filter>
+        </receiver>
 
         <activity android:name=".bet_f1" android:exported="false" />
         <activity android:name=".downforce_stats" android:exported="false" />

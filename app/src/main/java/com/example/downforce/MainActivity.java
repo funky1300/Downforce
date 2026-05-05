@@ -36,6 +36,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.List;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -256,23 +257,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (v.getId() == R.id.bnt) {
             // Use case 1: immediate notification.
             NotificationHelper.sendImmediateNotification(
-                    this, "Test", "This is an immediate notification");
+                    this, "Test", "This is an immediate notification",null);
 
-            // Use case 2: scheduled notification at an exact future time.
-            // Replace this with the actual race start time from your Race object.
-            long whenMs = System.currentTimeMillis() + 60_000L; // 1 minute from now
-            int raceId = 1;
-            boolean ok = NotificationHelper.scheduleNotification(
-                    this, raceId, whenMs,
-                    "Race starting soon", "Lights out in 5 minutes!");
+            List<NotificationHelper.Action> actions = Arrays.asList(
+                    new NotificationHelper.Action("View race",
+                            new Intent(this, MainActivity.class)),
+                    new NotificationHelper.Action("Stats",
+                            new Intent(this, downforce_stats.class))
+            );
 
-            if (!ok) {
-                // API 31+ user has revoked exact-alarm permission. Send them to Settings.
-                Toast.makeText(this,
-                        "Please allow exact alarms to schedule race reminders.",
-                        Toast.LENGTH_LONG).show();
-                NotificationHelper.openExactAlarmSettings(this);
-            }
+            NotificationHelper.sendImmediateNotification(this, "Race day", "Lights out soon", actions);
+
+            long whenMs = System.currentTimeMillis() + 10_000L;
+            NotificationHelper.scheduleNotification(this, 1, whenMs,
+                    "Reminder", "Race starts in 5 min", actions);
+
         }
     }
 }
