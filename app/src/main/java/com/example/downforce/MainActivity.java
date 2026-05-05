@@ -10,7 +10,6 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.GridLayout;
 import android.widget.ImageView;
@@ -18,10 +17,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
@@ -40,6 +37,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -50,7 +49,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private GridLayout racesGrid;
     private ArrayList<Race> races;
 
-    private String[] BannedRaces = {"Bahrain Grand Prix", "Saudi Arabian Grand Prix"};
+    private String[] BannedRaces = {"Pre-Season Testing", "Pre-Season Testing"};
 
 
     @Override
@@ -77,6 +76,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return super.onOptionsItemSelected(item);
     }
 
+    private final ActivityResultLauncher<String> notificationPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+                if (!granted) {
+                    Toast.makeText(this,
+                            "Notifications disabled — race reminders won't be shown.",
+                            Toast.LENGTH_LONG).show();
+                }
+            });
+
     //do not touch this function!!!!
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,7 +98,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
         //^^^do not touch this function^^^
 
-
+        NotificationHelper.createChannel(this);
+        ensureNotificationPermission();
 
         bnt = findViewById(R.id.bnt);
         raceTextView = findViewById(R.id.text);
@@ -108,6 +117,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
     }
+
+    private void ensureNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            int state = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS);
+            if (state != PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        }
+    }
+
 
     private void fetchRacesAPI() {
         RequestQueue queue = Volley.newRequestQueue(this);
@@ -129,7 +148,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             String flag = obj.optString("country_flag", "");
                             String circuit = obj.optString("circuit_image", "");
 
-                            if (!date.isEmpty()) {
+                            if (obj.optString("is_cancelled", "") == "false") { // --> check for cancelled races
                                 // Important: Match the constructor order in Race.java
                                 Race race = new Race(name, location, date, circuit, flag);
                                 races.add(race);
@@ -222,14 +241,38 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         dialog.show();
     }
 
+    public void setNotificationsForRaces(){
+        for (int i = 0; i < races.size(); i++) {
+            Race race = races.get(i);
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTimeInMillis(race.date.toInstant().toEpochMilli());
+
+
+        }
+    }
+
     @Override
     public void onClick(View v) {
-        if(v.getId() == R.id.bnt)
-        {
-            notification_handler.sendNotificationNow(this, "title", "message");
-            Calendar calendar = Calendar.getInstance();
-            calendar.set(2026,4,18,17,16);
-            notification_handler.sendNotification(this, "title", "message",calendar , "button text");
+        if (v.getId() == R.id.bnt) {
+            // Use case 1: immediate notification.
+            NotificationHelper.sendImmediateNotification(
+                    this, "Test", "This is an immediate notification");
+
+            // Use case 2: scheduled notification at an exact future time.
+            // Replace this with the actual race start time from your Race object.
+            long whenMs = System.currentTimeMillis() + 60_000L; // 1 minute from now
+            int raceId = 1;
+            boolean ok = NotificationHelper.scheduleNotification(
+                    this, raceId, whenMs,
+                    "Race starting soon", "Lights out in 5 minutes!");
+
+            if (!ok) {
+                // API 31+ user has revoked exact-alarm permission. Send them to Settings.
+                Toast.makeText(this,
+                        "Please allow exact alarms to schedule race reminders.",
+                        Toast.LENGTH_LONG).show();
+                NotificationHelper.openExactAlarmSettings(this);
+            }
         }
     }
 }

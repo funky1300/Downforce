@@ -3,10 +3,20 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <!-- Android 13+ (API 33): runtime permission required to post notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Android 12+ (API 31): exact alarms.
+         SCHEDULE_EXACT_ALARM is auto-granted on API 31-32, but on API 33+
+         the user must grant it via Settings (no runtime dialog).
+         USE_EXACT_ALARM is auto-granted but only for apps whose core
+         function requires it (calendars, alarms). Keep both for coverage. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-    <uses-permission android:name="android.permission.FLASHLIGHT" />
+
+    <!-- Re-register alarms after reboot (alarms don't survive reboot otherwise) -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="true"
@@ -18,14 +28,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Downforce">
 
-        <receiver android:name=".NotificationReceiver" android:exported="false" />
+        <receiver
+            android:name=".NotificationReceiver"
+            android:exported="false" />
 
-        <activity
-            android:name=".bet_f1"
-            android:exported="false" />
-        <activity
-            android:name=".downforce_stats"
-            android:exported="false" />
+        <activity android:name=".bet_f1" android:exported="false" />
+        <activity android:name=".downforce_stats" android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -35,5 +44,4 @@
             </intent-filter>
         </activity>
     </application>
-
 </manifest>

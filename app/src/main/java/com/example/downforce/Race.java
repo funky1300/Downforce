@@ -2,6 +2,8 @@ package com.example.downforce;
 
 import android.graphics.Bitmap;
 import android.graphics.Color;
+
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -40,7 +42,7 @@ public class Race {
     public String getDate() {
         if (date == null) return "Unknown Date";
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-        return date.format(formatter);
+        return date.plusHours(1).format(formatter);
     }
 
     public int getAverageColor(Bitmap bitmap) {
