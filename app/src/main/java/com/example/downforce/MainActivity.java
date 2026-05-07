@@ -259,18 +259,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             NotificationHelper.sendImmediateNotification(
                     this, "Test", "This is an immediate notification",null);
 
+            int raceId = 1;
+            int notificationId = raceId; // tie them together so the receiver can dismiss
+            String raceName = "Monaco Grand Prix";
+
+            Intent watched = new Intent(this, RaceActionReceiver.class)
+                    .setAction(RaceActionReceiver.ACTION_WATCHED)
+                    .putExtra(RaceActionReceiver.EXTRA_RACE_ID, raceId)
+                    .putExtra(RaceActionReceiver.EXTRA_RACE_NAME, raceName)
+                    .putExtra(RaceActionReceiver.EXTRA_NOTIFICATION_ID, notificationId);
+
+            Intent skipped = new Intent(this, RaceActionReceiver.class)
+                    .setAction(RaceActionReceiver.ACTION_SKIPPED)
+                    .putExtra(RaceActionReceiver.EXTRA_RACE_ID, raceId)
+                    .putExtra(RaceActionReceiver.EXTRA_RACE_NAME, raceName)
+                    .putExtra(RaceActionReceiver.EXTRA_NOTIFICATION_ID, notificationId);
+
             List<NotificationHelper.Action> actions = Arrays.asList(
-                    new NotificationHelper.Action("View race",
-                            new Intent(this, MainActivity.class)),
-                    new NotificationHelper.Action("Stats",
-                            new Intent(this, downforce_stats.class))
+                    new NotificationHelper.Action("✓ Watched", watched, true),   // broadcast = silent
+                    new NotificationHelper.Action("✗ Skipped", skipped, true)
             );
 
-            NotificationHelper.sendImmediateNotification(this, "Race day", "Lights out soon", actions);
-
-            long whenMs = System.currentTimeMillis() + 10_000L;
-            NotificationHelper.scheduleNotification(this, 1, whenMs,
-                    "Reminder", "Race starts in 5 min", actions);
+// Fire after the race ends:
+            long whenMs = System.currentTimeMillis() + 60_000L; // testing: 1 min from now
+            NotificationHelper.scheduleNotification(this, notificationId, whenMs,
+                    "Did you watch?", raceName + " just ended.", actions);
 
         }
     }
