@@ -33,9 +33,10 @@ import com.squareup.picasso.Picasso;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.List;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -46,7 +47,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private TextView raceTextView;
     private ImageView image;
-    private Button bnt;
     private GridLayout racesGrid;
     private ArrayList<Race> races;
 
@@ -86,7 +86,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
             });
 
-    //do not touch this function!!!!
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -97,12 +96,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-        //^^^do not touch this function^^^
 
         NotificationHelper.createChannel(this);
         ensureNotificationPermission();
 
-        bnt = findViewById(R.id.bnt);
+
         raceTextView = findViewById(R.id.text);
         image = findViewById(R.id.image);
         racesGrid = findViewById(R.id.races_grid);
@@ -110,7 +108,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         races = new ArrayList<>();
         fetchRacesAPI();
 
-        bnt.setOnClickListener(this);
+
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -137,22 +135,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 response -> {
                     try {
                         JSONArray jsonArray = new JSONArray(response);
-
+                        races.clear();
+                        racesGrid.removeAllViews();
 
                         for (int i = 0; i < jsonArray.length(); i++) {
                             JSONObject obj = jsonArray.getJSONObject(i);
 
                             String name = obj.optString("meeting_name", "Unknown Race");
-                            if (Arrays.asList(BannedRaces).contains(name)) continue; //--> check for banned races from list
+                            if (Arrays.asList(BannedRaces).contains(name)) continue;
+                            
+                            int id = obj.optInt("meeting_key", i);
                             String location = obj.optString("location", "Unknown Location");
-                            String date = obj.optString("date_end", "");
+                            String startDate = obj.optString("date_start", "");
+                            String endDate = obj.optString("date_end", "");
                             String flag = obj.optString("country_flag", "");
                             String circuit = obj.optString("circuit_image", "");
 
-                            if (obj.optString("is_cancelled", "") == "false") { // --> check for cancelled races
-                                // Important: Match the constructor order in Race.java
-                                Race race = new Race(name, location, date, circuit, flag);
+                            if (obj.optString("is_cancelled", "false").equals("false")) {
+                                Race race = new Race(id, name, location, startDate, endDate, circuit, flag);
                                 races.add(race);
+                                scheduleRaceNotifications(race);
 
                                 if (i > 0) {
                                     addRaceToGrid(race);
@@ -182,6 +184,43 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 });
 
         queue.add(stringRequest);
+    }
+
+    private void scheduleRaceNotifications(Race race) {
+        long now = System.currentTimeMillis();
+
+        // 1. Notification 10 minutes before race starts
+        long beforeStartTime = race.startDate.toInstant().toEpochMilli() - (10 * 60 * 1000);
+        if (beforeStartTime > now) {
+            NotificationHelper.scheduleNotification(this, race.getId() * 10, beforeStartTime,
+                    "Race Starting Soon!", race.getName() + " starts in 10 minutes.", null);
+        }
+
+        // 2. Notification 2 hours after race ends
+        long afterEndTime = race.endDate.toInstant().toEpochMilli() + (2 * 60 * 60 * 1000);
+        if (afterEndTime > now) {
+            int notificationId = race.getId() * 10 + 1;
+            
+            Intent watched = new Intent(this, RaceActionReceiver.class)
+                    .setAction(RaceActionReceiver.ACTION_WATCHED)
+                    .putExtra(RaceActionReceiver.EXTRA_RACE_ID, race.getId())
+                    .putExtra(RaceActionReceiver.EXTRA_RACE_NAME, race.getName())
+                    .putExtra(RaceActionReceiver.EXTRA_NOTIFICATION_ID, notificationId);
+
+            Intent skipped = new Intent(this, RaceActionReceiver.class)
+                    .setAction(RaceActionReceiver.ACTION_SKIPPED)
+                    .putExtra(RaceActionReceiver.EXTRA_RACE_ID, race.getId())
+                    .putExtra(RaceActionReceiver.EXTRA_RACE_NAME, race.getName())
+                    .putExtra(RaceActionReceiver.EXTRA_NOTIFICATION_ID, notificationId);
+
+            List<NotificationHelper.Action> actions = Arrays.asList(
+                    new NotificationHelper.Action("✓ Watched", watched, true),
+                    new NotificationHelper.Action("✗ Skipped", skipped, true)
+            );
+
+            NotificationHelper.scheduleNotification(this, notificationId, afterEndTime,
+                    "Did you watch?", "The " + race.getName() + " ended 2 hours ago.", actions);
+        }
     }
 
     private void addRaceToGrid(Race race) {
@@ -242,49 +281,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         dialog.show();
     }
 
-    public void setNotificationsForRaces(){
-        for (int i = 0; i < races.size(); i++) {
-            Race race = races.get(i);
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTimeInMillis(race.date.toInstant().toEpochMilli());
-
-
-        }
-    }
-
     @Override
     public void onClick(View v) {
-        if (v.getId() == R.id.bnt) {
-            // Use case 1: immediate notification.
-            NotificationHelper.sendImmediateNotification(
-                    this, "Test", "This is an immediate notification",null);
-
-            int raceId = 1;
-            int notificationId = raceId; // tie them together so the receiver can dismiss
-            String raceName = "Monaco Grand Prix";
-
-            Intent watched = new Intent(this, RaceActionReceiver.class)
-                    .setAction(RaceActionReceiver.ACTION_WATCHED)
-                    .putExtra(RaceActionReceiver.EXTRA_RACE_ID, raceId)
-                    .putExtra(RaceActionReceiver.EXTRA_RACE_NAME, raceName)
-                    .putExtra(RaceActionReceiver.EXTRA_NOTIFICATION_ID, notificationId);
-
-            Intent skipped = new Intent(this, RaceActionReceiver.class)
-                    .setAction(RaceActionReceiver.ACTION_SKIPPED)
-                    .putExtra(RaceActionReceiver.EXTRA_RACE_ID, raceId)
-                    .putExtra(RaceActionReceiver.EXTRA_RACE_NAME, raceName)
-                    .putExtra(RaceActionReceiver.EXTRA_NOTIFICATION_ID, notificationId);
-
-            List<NotificationHelper.Action> actions = Arrays.asList(
-                    new NotificationHelper.Action("✓ Watched", watched, true),   // broadcast = silent
-                    new NotificationHelper.Action("✗ Skipped", skipped, true)
-            );
-
-// Fire after the race ends:
-            long whenMs = System.currentTimeMillis() + 60_000L; // testing: 1 min from now
-            NotificationHelper.scheduleNotification(this, notificationId, whenMs,
-                    "Did you watch?", raceName + " just ended.", actions);
-
-        }
+//        if (v.getId() == R.id.bnt) {
+//            NotificationHelper.sendImmediateNotification(
+//                    this, "Notification Test", "Notifications are working!", null);
+//        }
     }
 }
