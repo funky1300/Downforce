@@ -29,7 +29,7 @@ public class RaceAdapter extends RecyclerView.Adapter<RaceAdapter.RaceViewHolder
     public void onBindViewHolder( RaceViewHolder holder, int position) {
         Race race = races.get(position);
         holder.raceName.setText(race.getName());
-        holder.raceDate.setText(race.getDate() + " - " + race.getLocation());
+        holder.raceDate.setText(race.getEndDate() + " - " + race.getLocation());
 
         
         if (race.getFlag() != null && !race.getFlag().isEmpty()) {

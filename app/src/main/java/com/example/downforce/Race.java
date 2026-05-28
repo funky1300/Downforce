@@ -3,6 +3,7 @@ package com.example.downforce;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -44,13 +45,21 @@ public class Race {
     public String getFlag() { return flag; }
     public String getCircuit() { return circuit; }
 
-    public String getstartDate() {
+    public String getStartDate() {
+        if (startDate == null) return "Unknown Date";
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-        return startDate.plusHours(1).format(formatter);
+        // Convert UTC to local device time (handles Summer/Winter time automatically)
+        return startDate.withZoneSameInstant(ZoneId.systemDefault()).format(formatter);
     }
+
     public String getEndDate() {
+        if (endDate == null) return "Unknown Date";
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-        return endDate.plusHours(1).format(formatter);
+        return endDate.withZoneSameInstant(ZoneId.systemDefault()).format(formatter);
+    }
+
+    public String getDate() {
+        return getStartDate();
     }
 
     public int getAverageColor(Bitmap bitmap) {
