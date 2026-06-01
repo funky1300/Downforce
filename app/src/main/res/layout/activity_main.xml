@@ -53,13 +53,35 @@
                         android:textSize="12sp"
                         android:textStyle="bold" />
 
-                    <ImageView
-                        android:id="@+id/image"
-                        android:layout_width="80dp"
-                        android:layout_height="50dp"
-                        android:layout_gravity="end"
-                        android:scaleType="centerInside"
-                        tools:src="@android:drawable/ic_menu_gallery" />
+                    <LinearLayout
+                        android:layout_marginTop="10sp"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal" >
+
+                        <ImageView
+                            android:id="@+id/image"
+                            android:layout_width="80dp"
+                            android:layout_height="50dp"
+                            android:layout_gravity="center"
+                            android:layout_marginLeft="15sp"
+                            android:scaleType="centerInside"
+                            tools:src="@android:drawable/ic_menu_gallery" />
+                        <TextView
+                            android:id="@+id/tvCountdown"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="00 Days 00:00:00"
+                            android:layout_gravity="center"
+                            android:textSize="25sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/accent_teal"
+                            android:layout_marginLeft="15sp"
+                            android:padding="4dp"
+                            android:background="@drawable/rounded_card_bg"/>
+
+                    </LinearLayout>
+
 
                     <TextView
                         android:id="@+id/text"

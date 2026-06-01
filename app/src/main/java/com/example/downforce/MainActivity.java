@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -34,16 +35,19 @@ import com.squareup.picasso.Picasso;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
-
+    private CountDownTimer timer;
     private TextView raceTextView;
     private ImageView image;
     private GridLayout racesGrid;
@@ -104,15 +108,33 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         image = findViewById(R.id.image);
         racesGrid = findViewById(R.id.races_grid);
 
+        TextView tv = findViewById(R.id.tvCountdown);
+
         races = new ArrayList<>();
         fetchRacesAPI();
 
 
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
-            }
+        try {
+            // 1. Set date and get target time in milliseconds all in one line
+            long target = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).parse("2026-12-31 23:59").getTime();
+
+            // 2. Start timer immediately (Target Time - Current Time)
+            timer = new CountDownTimer(target - System.currentTimeMillis(), 1000) {
+                public void onTick(long ms) {
+                    // 3. Do the math directly inside the text formatter
+                    tv.setText(String.format(Locale.US, "%02d Days %02d:%02d:%02d",
+                            ms / 86400000,          // Days
+                            (ms / 3600000) % 24,    // Hours
+                            (ms / 60000) % 60,      // Minutes
+                            (ms / 1000) % 60));     // Seconds
+                }
+                public void onFinish() {
+                    tv.setText("Event Started!");
+                }
+            }.start();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -136,6 +158,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         JSONArray jsonArray = new JSONArray(response);
                         races.clear();
                         racesGrid.removeAllViews();
+                        boolean adjustTime = true;
 
                         for (int i = 0; i < jsonArray.length(); i++) {
                             JSONObject obj = jsonArray.getJSONObject(i);
@@ -152,6 +175,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                             if (obj.optString("is_cancelled", "false").equals("false")) {
                                 Race race = new Race(id, name, location, startDate, endDate, circuit, flag);
+
+                                // Stop adjusting if we reached the United States Grand Prix
+                                if (name.toLowerCase().contains("united states")) {
+                                    adjustTime = false;
+                                }
+
+                                if (adjustTime) {
+                                    race.startDate = race.startDate.plusHours(1);
+                                    race.endDate = race.endDate.plusHours(1);
+                                }
+
+                                // Stop adjusting after the Singapore Grand Prix (so Singapore is adjusted, but next ones are not)
+                                if (name.toLowerCase().contains("singapore")) {
+                                    adjustTime = false;
+                                }
+
                                 races.add(race);
                                 scheduleRaceNotifications(race);
 
@@ -162,16 +201,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         }
 
                         if (!races.isEmpty()) {
-                            Race nextRace = races.get(0);
+                            // Find the real next race based on current date
+                            Race nextRace = null;
+                            long currentTime = System.currentTimeMillis();
+
+                            for (Race race : races) {
+                                if (race.endDate.toInstant().toEpochMilli() > currentTime) {
+                                    nextRace = race;
+                                    break;
+                                }
+                            }
+
+                            // Fallback to first race if all are in the past
+                            if (nextRace == null) nextRace = races.get(0);
+
                             raceTextView.setText(nextRace.getName() + "\n" + nextRace.getLocation());
                             if (!nextRace.getFlag().isEmpty()) {
                                 Picasso.get().load(nextRace.getFlag()).into(image);
                             }
 
+                            final Race finalNextRace = nextRace;
                             LinearLayout nextRaceContainer = findViewById(R.id.next_race_container);
-                            nextRaceContainer.setOnClickListener(v -> showRaceDetailDialog(nextRace));
-                        }
+                            nextRaceContainer.setOnClickListener(v -> showRaceDetailDialog(finalNextRace));
 
+                            updateCountdown(nextRace);
+                        }
                     } catch (Exception e) {
                         Log.e("F1_DATA", "JSON Error: " + e.getMessage());
                         Toast.makeText(this, "Data Error", Toast.LENGTH_SHORT).show();
@@ -185,11 +239,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         queue.add(stringRequest);
     }
 
+    private void updateCountdown(Race nextRace) {
+        TextView tv = findViewById(R.id.tvCountdown);
+        if (timer != null) {
+            timer.cancel();
+        }
+
+        long target = nextRace.endDate.toInstant().toEpochMilli();
+        long diff = target - System.currentTimeMillis();
+
+        timer = new CountDownTimer(diff, 1000) {
+            public void onTick(long ms) {
+                tv.setText(String.format(Locale.US, "%02d Days %02d:%02d:%02d",
+                        ms / 86400000,
+                        (ms / 3600000) % 24,
+                        (ms / 60000) % 60,
+                        (ms / 1000) % 60));
+            }
+
+            public void onFinish() {
+                tv.setText("Race Started!");
+            }
+        }.start();
+    }
+
     private void scheduleRaceNotifications(Race race) {
         long now = System.currentTimeMillis();
 
         // 1. Notification 10 minutes before race starts
-        long beforeStartTime = race.startDate.toInstant().toEpochMilli() - (10 * 60 * 1000);
+        long beforeStartTime = race.endDate.toInstant().toEpochMilli() - (10 * 60 * 1000);
         if (beforeStartTime > now) {
             NotificationHelper.scheduleNotification(this, race.getId() * 10, beforeStartTime,
                     "Race Starting Soon!", race.getName() + " starts in 10 minutes.", null);
