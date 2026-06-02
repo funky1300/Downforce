@@ -18,4 +18,10 @@
         android:orderInCategory="100"
         android:title="bet f1"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/sign_out"
+        android:orderInCategory="200"
+        android:title="Sign Out"
+        app:showAsAction="never" />
 </menu>

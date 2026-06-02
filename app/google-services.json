@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "558778085334",
+    "project_id": "downforce-6c6ed",
+    "storage_bucket": "downforce-6c6ed.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:558778085334:android:f28680993cade628453e77",
+        "android_client_info": {
+          "package_name": "com.example.downforce"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAHu4VPC_PCOuT5NQOjxWQeA4nOdIk3vVQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

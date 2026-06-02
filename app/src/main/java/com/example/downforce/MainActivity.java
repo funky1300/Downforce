@@ -26,6 +26,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
@@ -77,6 +78,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Intent goGu = new Intent(this, bet_f1.class);
             startActivity(goGu);
         }
+        if (item.getItemId() == R.id.sign_out) {
+            FirebaseAuth.getInstance().signOut();
+            Intent login = new Intent(this, LoginActivity.class);
+            login.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(login);
+        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -107,6 +114,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         raceTextView = findViewById(R.id.text);
         image = findViewById(R.id.image);
         racesGrid = findViewById(R.id.races_grid);
+
+        com.google.firebase.auth.FirebaseUser currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            TextView tvUserName = findViewById(R.id.tvUserName);
+            ImageView ivUserAvatar = findViewById(R.id.ivUserAvatar);
+            tvUserName.setText(currentUser.getDisplayName() != null ? currentUser.getDisplayName() : "");
+            if (currentUser.getPhotoUrl() != null) {
+                Picasso.get().load(currentUser.getPhotoUrl()).into(ivUserAvatar);
+            }
+        }
 
         TextView tv = findViewById(R.id.tvCountdown);
 
@@ -337,6 +354,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         TextView locationTxt = dialogView.findViewById(R.id.dialog_location);
         TextView dateTxt = dialogView.findViewById(R.id.dialog_date);
         ImageView circuitImg = dialogView.findViewById(R.id.dialog_circuit);
+        Button mapBtn = dialogView.findViewById(R.id.dialog_map_button);
         Button closeBtn = dialogView.findViewById(R.id.dialog_close_button);
 
         nameTxt.setText(race.getName());
@@ -356,6 +374,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             dialog.getWindow().setBackgroundDrawableResource(R.drawable.alertdialogbox);
         }
         
+        mapBtn.setOnClickListener(v -> {
+            Intent mapIntent = new Intent(this, MapsActivity.class);
+            mapIntent.putExtra("race_name", race.getName());
+            mapIntent.putExtra("race_location", race.getLocation());
+            startActivity(mapIntent);
+        });
         closeBtn.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
     }

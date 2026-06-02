@@ -50,14 +50,29 @@
         android:textColor="@color/light_gray"
         android:textSize="14sp" />
 
-    <Button
-        android:id="@+id/dialog_close_button"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="end"
         android:layout_marginTop="24dp"
-        android:background="@drawable/button_design"
-        android:text="CLOSE"
-        android:textColor="@color/accent_teal" />
+        android:orientation="horizontal"
+        android:gravity="end">
+
+        <Button
+            android:id="@+id/dialog_map_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/button_design"
+            android:text="📍 MAP"
+            android:textColor="@color/accent_teal" />
+
+        <Button
+            android:id="@+id/dialog_close_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/button_design"
+            android:text="CLOSE"
+            android:textColor="@color/accent_teal" />
+    </LinearLayout>
 
 </LinearLayout>
