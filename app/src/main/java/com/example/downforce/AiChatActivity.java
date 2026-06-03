@@ -26,7 +26,7 @@ import org.json.JSONObject;
 
 public class AiChatActivity extends AppCompatActivity {
 
-    private static final String GROQ_API_KEY = "YOUR_GROQ_API_KEY"; // get free key at console.groq.com
+    private static final String GROQ_API_KEY = ""; // get free key at console.groq.com
     private static final String GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
     private EditText editQuestion;
