@@ -7,9 +7,11 @@ import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -19,6 +21,9 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -27,10 +32,11 @@ import org.json.JSONObject;
 public class downforce_stats extends AppCompatActivity {
 
     private LinearLayout driverStandingsContainer, constructorStandingsContainer;
-    private LinearLayout raceResultsContainer, lapTimesContainer;
+    private LinearLayout raceResultsContainer, lapTimesContainer, leaderboardContainer;
     private TextView textLastRaceName, textLastRaceDate;
     private TextView textFastestLapDriver, textFastestLapTime;
     private RequestQueue queue;
+    private FirebaseFirestore db;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -64,11 +70,13 @@ public class downforce_stats extends AppCompatActivity {
         //^^^do not touch this function^^^
 
         queue = Volley.newRequestQueue(this);
+        db = FirebaseFirestore.getInstance();
 
         driverStandingsContainer = findViewById(R.id.driver_standings_container);
         constructorStandingsContainer = findViewById(R.id.constructor_standings_container);
         raceResultsContainer = findViewById(R.id.race_results_container);
         lapTimesContainer = findViewById(R.id.lap_times_container);
+        leaderboardContainer = findViewById(R.id.leaderboard_container);
         textLastRaceName = findViewById(R.id.text_last_race_name);
         textLastRaceDate = findViewById(R.id.text_last_race_date);
         textFastestLapDriver = findViewById(R.id.text_fastest_lap_driver);
@@ -77,6 +85,7 @@ public class downforce_stats extends AppCompatActivity {
         loadDriverStandings();
         loadConstructorStandings();
         loadRaceResults();
+        loadLeaderboard();
     }
 
     private void loadDriverStandings() {
@@ -251,6 +260,134 @@ public class downforce_stats extends AppCompatActivity {
         tv.setTextSize(13f);
         tv.setPadding(24, 16, 24, 16);
         container.addView(tv);
+    }
+
+    private void loadLeaderboard() {
+        db.collection("users")
+                .orderBy("points", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(snapshots -> {
+                    leaderboardContainer.removeAllViews();
+                    int rank = 1;
+                    for (QueryDocumentSnapshot doc : snapshots) {
+                        String name = doc.getString("displayName");
+                        Long pts = doc.getLong("points");
+                        String uid = doc.getId();
+                        if (name == null) name = "Unknown";
+                        if (pts == null) pts = 0L;
+                        addLeaderboardRow(rank++, name, pts, uid);
+                    }
+                    if (snapshots.isEmpty()) {
+                        showError(leaderboardContainer, "No players yet");
+                    }
+                })
+                .addOnFailureListener(e -> showError(leaderboardContainer, "Could not load leaderboard"));
+    }
+
+    private void addLeaderboardRow(int rank, String name, long pts, String uid) {
+        LinearLayout row = makeRow();
+        row.addView(makeCell(String.valueOf(rank), 0xFFDBE2EF, 14f, true, dp(32)));
+        row.addView(makeCell(name, 0xFFF9F7F7, 14f, true, 0));
+        TextView tvPts = makeCell(pts + " 🪙", 0xFFFFFFFF, 14f, true, dp(48));
+        tvPts.setGravity(Gravity.END);
+        row.addView(tvPts);
+        row.setOnClickListener(v -> showUserBetsDialog(name, uid));
+        leaderboardContainer.addView(row);
+    }
+
+    private void showUserBetsDialog(String displayName, String uid) {
+        ScrollView scrollView = new ScrollView(this);
+        LinearLayout betsLayout = new LinearLayout(this);
+        betsLayout.setOrientation(LinearLayout.VERTICAL);
+        betsLayout.setPadding(32, 16, 32, 16);
+        scrollView.addView(betsLayout);
+
+        TextView loading = new TextView(this);
+        loading.setText("Loading...");
+        loading.setTextColor(0xFFDBE2EF);
+        loading.setPadding(0, 16, 0, 16);
+        betsLayout.addView(loading);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(displayName + "'s Bets")
+                .setView(scrollView)
+                .setPositiveButton("Close", null)
+                .create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(R.drawable.alertdialogbox);
+        }
+        dialog.show();
+
+        db.collection("users").document(uid)
+                .collection("bets")
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(snapshots -> {
+                    betsLayout.removeAllViews();
+                    if (snapshots.isEmpty()) {
+                        TextView empty = new TextView(this);
+                        empty.setText("No bets placed yet");
+                        empty.setTextColor(0xFFDBE2EF);
+                        empty.setPadding(0, 16, 0, 16);
+                        betsLayout.addView(empty);
+                        return;
+                    }
+                    for (QueryDocumentSnapshot doc : snapshots) {
+                        String docId = doc.getId();
+                        Boolean resolved = doc.getBoolean("resolved");
+                        Long pts = doc.getLong("pointsAwarded");
+                        String status = Boolean.TRUE.equals(resolved)
+                                ? (pts != null && pts >= 0 ? "+" + pts + " pts" : pts + " pts")
+                                : "Pending";
+                        String label;
+                        if (docId.startsWith("race_")) {
+                            String raceName = doc.getString("raceName");
+                            String driverName = doc.getString("driverName");
+                            Long pos = doc.getLong("predictedPosition");
+                            label = (pos != null)
+                                    ? raceName + "\n" + driverName + " P" + pos
+                                    : raceName + "\n" + driverName;
+                        } else {
+                            String champType = doc.getString("champType");
+                            String winner = doc.getString("predictedWinner");
+                            label = champType + "\n" + winner;
+                        }
+                        addBetDialogRow(betsLayout, label, status);
+                    }
+                });
+    }
+
+    private void addBetDialogRow(LinearLayout container, String label, String status) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(24, 20, 24, 20);
+        row.setBackgroundResource(R.drawable.rounded_card_bg);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, 0, 0, 8);
+        row.setLayoutParams(params);
+
+        TextView tvLabel = new TextView(this);
+        tvLabel.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        tvLabel.setText(label);
+        tvLabel.setTextColor(0xFFF9F7F7);
+        tvLabel.setTextSize(13f);
+
+        TextView tvStatus = new TextView(this);
+        tvStatus.setText(status);
+        tvStatus.setTextSize(13f);
+        if (status.startsWith("+")) {
+            tvStatus.setTextColor(0xFF4CAF50);
+        } else if (status.startsWith("-")) {
+            tvStatus.setTextColor(0xFFFF5252);
+        } else {
+            tvStatus.setTextColor(0xFFDBE2EF);
+        }
+
+        row.addView(tvLabel);
+        row.addView(tvStatus);
+        container.addView(row);
     }
 
     // ----- layout helpers -----
