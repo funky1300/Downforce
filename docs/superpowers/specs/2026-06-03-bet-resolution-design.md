@@ -10,14 +10,23 @@ Championship bets are deferred — they resolve at season end only (not in scope
 
 ## Architecture
 
-One new file: `BetResolver.java`  
-One change to existing code: one line added to `MainActivity.onCreate` after user is confirmed signed in.
+One new file: `BetResolver.java`
 
-```java
-new BetResolver(this, uid).resolve();
-```
+Two existing files modified:
 
-No other existing files are modified.
+1. **`MainActivity.java`** — one line added to `onCreate` after user is confirmed signed in:
+   ```java
+   new BetResolver(this, uid).resolve();
+   ```
+
+2. **`bet_f1.java`** — one null-check added in `loadExistingBets()`. No-bet sentinel documents have no `predictedPosition` field, so `doc.getLong("predictedPosition")` returns null. The label line must guard against this:
+   ```java
+   // Before: raceName + " — " + driverName + " P" + pos
+   // After:
+   String label = (pos != null)
+       ? raceName + " — " + driverName + " P" + pos
+       : raceName + " — " + driverName;
+   ```
 
 ---
 
