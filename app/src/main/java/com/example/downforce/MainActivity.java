@@ -84,6 +84,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             login.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(login);
         }
+        if (item.getItemId() == R.id.action_ai_chat) {
+            startActivity(new Intent(this, AiChatActivity.class));
+        }
         return super.onOptionsItemSelected(item);
     }
 
