@@ -4,7 +4,8 @@
 - **Name:** Downforce — F1 betting & stats Android app (bagrut project)
 - **Student:** Israeli high school student, not very experienced with Android Studio
 - **Language:** Java (NOT Kotlin)
-- **Local path:** `/home/evyatar/AndroidStudioProjects/Downforce`
+- **Local path (Linux):** `/home/evyatar/AndroidStudioProjects/Downforce`
+- **Local path (Windows):** `C:\Users\evyat\AndroidStudioProjects\Downforce`
 - **GitHub:** https://github.com/funky1300/Downforce
 - **Package:** `com.example.downforce`
 - **SDK:** minSdk 30, targetSdk 36, compileSdk 36, AGP 8.13.2, Java 11
@@ -77,7 +78,7 @@
 - Driver standings: `https://api.jolpi.ca/ergast/f1/2026/driverstandings.json`
 - Constructor standings: `https://api.jolpi.ca/ergast/f1/2026/constructorstandings.json`
 - Last race results + fastest laps: `https://api.jolpi.ca/ergast/f1/2026/last/results.json`
-- All containers clear placeholder rows and fill with live data
+- **Leaderboard** (Section 5): queries `/users` ordered by `points` desc, tap any row to see that user's bets in a dialog
 
 ### AI Chat (AiChatActivity.java) ✅ — Bagrut Section 9
 - Uses **Groq API** (free, no billing needed)
@@ -91,6 +92,15 @@
 - Shows "AI-generated — may not be accurate" disclaimer
 - Gemini was tried and abandoned (required billing); Groq is the replacement
 
+### Bet Resolution (BetResolver.java) ✅
+- Called automatically from `MainActivity.onCreate`
+- Fetches all completed 2026 race results from Jolpica (`results.json?limit=100`)
+- Queries user's `/bets` subcollection from Firestore
+- For each completed race with an unresolved bet → scores it, updates `resolved=true`, `actualPosition`, `pointsAwarded`
+- For each completed race with NO bet → creates sentinel doc `race_nobet_r{round}` with `pointsAwarded=-3`
+- All writes in one Firestore transaction (atomic), then fires one notification per resolved item
+- On error → Toast "Could not resolve bets — check your connection"
+
 ---
 
 ## Firestore Structure
@@ -102,32 +112,33 @@
   raceId, raceName, driverName, predictedPosition,
   timestamp, resolved (bool), actualPosition, pointsAwarded
 
+/users/{uid}/bets/race_nobet_r{round}    ← created by BetResolver for missed races
+  raceName, driverName="No bet placed", resolved=true, pointsAwarded=-3, timestamp
+
 /users/{uid}/bets/champ_{type}
   champType, predictedWinner, timestamp, resolved (bool), pointsAwarded
 ```
 
 ---
 
-## Points Scoring System (agreed, NOT yet auto-resolved)
+## Points Scoring System ✅ (auto-resolved by BetResolver.java)
 ```
 Driver finished P1  → +10 points
 Driver finished P2  → +6 points
 Driver finished P3  → +3 points
 Driver finished P4  → 0 points
 Driver finished P5–P10  → -2 points
-Driver finished P11–P22 → -4 points
-No bet placed for race  → -3 points
+Driver finished P11+ or DNF → -4 points
+No bet placed for race  → -3 points (sentinel doc created automatically)
 ```
 
 ---
 
 ## Still TODO ❌
-- [ ] **Bet resolution** — fetch race results from OpenF1 after race ends, match against user bets,
-  update `resolved=true`, `actualPosition`, `pointsAwarded`, update user `totalPoints` via Firestore transaction
-- [ ] **Season auto-reset** — on app launch compare `seasonYear` field to current year; reset March 1st
-- [ ] **Global leaderboard** — in stats screen, query `/users` ordered by `totalPoints` desc
+- [ ] **Season auto-reset** — on app launch compare `seasonYear` field to current year; reset points to 0 on March 1st
 - [ ] **Personal Wrapped stats** — races watched/skipped (SharedPreferences `race_history`) +
   bets placed + win rate + total points
+- [ ] **Championship bet resolution** — season end only (manual trigger or end-of-year check)
 
 ---
 
@@ -145,6 +156,7 @@ No bet placed for race  → -3 points
 ### API quirks
 - Manual +1hr offset in `fetchRacesAPI()` for races before "United States Grand Prix" — don't touch
 - Jolpica responses are wrapped: `MRData → StandingsTable → StandingsLists[0] → DriverStandings`
+- Jolpica results: `MRData → RaceTable → Races → [array] → Results → [array] → position, Driver.givenName/familyName`
 - OpenF1 returns JSON arrays
 
 ### Notification ID scheme
@@ -171,6 +183,6 @@ No bet placed for race  → -3 points
 ---
 
 ## Git / GitHub
-- Synced between Windows PC and Linux laptop (`/home/evyatar/AndroidStudioProjects/Downforce`)
+- Synced between Windows PC and Linux laptop
 - `.idea/` files are NOT committed
 - Always Commit and Push after changes, then Git Pull on other machine
