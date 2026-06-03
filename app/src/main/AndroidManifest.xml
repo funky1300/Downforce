@@ -63,6 +63,7 @@
             </intent-filter>
         </receiver>
 
+        <activity android:name=".WrappedActivity" android:exported="false" />
         <activity android:name=".bet_f1" android:exported="false" />
         <activity android:name=".downforce_stats" android:exported="false" />
         <activity android:name=".MainActivity" android:exported="false" />

@@ -36,9 +36,14 @@ import com.squareup.picasso.Picasso;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.WriteBatch;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -86,6 +91,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         if (item.getItemId() == R.id.action_ai_chat) {
             startActivity(new Intent(this, AiChatActivity.class));
+        }
+        if (item.getItemId() == R.id.wrapped) {
+            startActivity(new Intent(this, WrappedActivity.class));
         }
         return super.onOptionsItemSelected(item);
     }
@@ -135,6 +143,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         com.google.firebase.auth.FirebaseUser resolveUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
         if (resolveUser != null) {
+            checkSeasonReset(resolveUser.getUid());
             new BetResolver(this, resolveUser.getUid()).resolve();
         }
 
@@ -390,6 +399,41 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
         closeBtn.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
+    }
+
+    private void checkSeasonReset(String uid) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("users").document(uid).get()
+                .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) return;
+                    long storedYear = doc.getLong("seasonYear") != null ? doc.getLong("seasonYear") : 0;
+                    Calendar now = Calendar.getInstance();
+                    int currentYear = now.get(Calendar.YEAR);
+                    // Reset on or after March 1st of the new season year
+                    boolean isPastMarch1 = now.get(Calendar.MONTH) >= Calendar.MARCH;
+                    if (storedYear < currentYear && isPastMarch1) {
+                        performSeasonReset(uid, currentYear, db);
+                    } else if (storedYear == 0) {
+                        // First launch — just set the seasonYear without resetting points
+                        db.collection("users").document(uid)
+                                .update("seasonYear", (long) currentYear);
+                    }
+                });
+    }
+
+    private void performSeasonReset(String uid, int newYear, FirebaseFirestore db) {
+        DocumentReference userRef = db.collection("users").document(uid);
+        userRef.collection("bets").get()
+                .addOnSuccessListener(snapshots -> {
+                    WriteBatch batch = db.batch();
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : snapshots.getDocuments()) {
+                        batch.delete(doc.getReference());
+                    }
+                    batch.update(userRef, "points", 0L, "seasonYear", (long) newYear);
+                    batch.commit()
+                            .addOnSuccessListener(v ->
+                                    Toast.makeText(this, "New F1 season! Points reset for " + newYear, Toast.LENGTH_LONG).show());
+                });
     }
 
     @Override

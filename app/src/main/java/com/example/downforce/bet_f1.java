@@ -76,6 +76,8 @@ public class bet_f1 extends AppCompatActivity {
             startActivity(new Intent(this, downforce_stats.class));
         } else if (item.getItemId() == R.id.action_ai_chat) {
             startActivity(new Intent(this, AiChatActivity.class));
+        } else if (item.getItemId() == R.id.wrapped) {
+            startActivity(new Intent(this, WrappedActivity.class));
         }
         return super.onOptionsItemSelected(item);
     }

@@ -100,6 +100,35 @@
 - For each completed race with NO bet → creates sentinel doc `race_nobet_r{round}` with `pointsAwarded=-3`
 - All writes in one Firestore transaction (atomic), then fires one notification per resolved item
 - On error → Toast "Could not resolve bets — check your connection"
+- `BetUpdate` inner class has `isChampBet` boolean; `sendNotification` checks it to avoid "finished P0" in champ notifications
+
+### Championship Bet Resolution (BetResolver.java) ✅
+- Runs automatically alongside race bet resolution (parallel Firestore transactions)
+- `processBets` collects unresolved `champ_` docs → calls `tryResolveChampionshipBets`
+- Fetches driver standings; if `round < 24` exits silently (season not over yet)
+- If `round == 24`, fetches constructor standings → `applyChampionshipResults`
+- Correct champion prediction = **+25 pts**, wrong = **0 pts**
+- Fires a notification per resolved championship bet
+
+### Season Auto-Reset (MainActivity.java) ✅
+- `checkSeasonReset(uid)` called in `onCreate` before `BetResolver`
+- Reads `seasonYear` from user's Firestore doc (null-safe: treats missing as 0)
+- If `seasonYear < currentYear` AND `Calendar.MONTH >= Calendar.MARCH` → `performSeasonReset`
+  - Batch-deletes all `/bets` subcollection docs
+  - Sets `points = 0`, `seasonYear = currentYear` in the same batch
+  - Shows Toast "New F1 season! Points reset for {year}"
+- If `seasonYear` is missing (new user) → just stamps `seasonYear = currentYear`, no reset
+
+### Personal Wrapped (WrappedActivity.java) ✅
+- New activity, accessible via **"My Wrapped"** overflow menu item in all screens
+- Layout: `activity_wrapped.xml`
+- Data sources:
+  - Total points: Firestore user doc `points`
+  - Watched / Skipped counts: SharedPreferences `"race_history"` (keys `race_{id}`, values `"watched"` / `"skipped"`)
+  - Bets placed: count `race_{id}` docs excluding `race_nobet_*`
+  - Bets won: resolved race bets with `pointsAwarded > 0`
+  - Win rate: bets won / resolved race bets × 100%
+  - Missed races: count `race_nobet_*` docs
 
 ---
 
@@ -134,11 +163,12 @@ No bet placed for race  → -3 points (sentinel doc created automatically)
 
 ---
 
-## Still TODO ❌
-- [ ] **Season auto-reset** — on app launch compare `seasonYear` field to current year; reset points to 0 on March 1st
-- [ ] **Personal Wrapped stats** — races watched/skipped (SharedPreferences `race_history`) +
-  bets placed + win rate + total points
-- [ ] **Championship bet resolution** — season end only (manual trigger or end-of-year check)
+## All TODOs Complete ✅
+
+All three originally planned features are now implemented:
+- Season auto-reset ✅
+- Personal Wrapped stats screen ✅
+- Championship bet resolution ✅
 
 ---
 

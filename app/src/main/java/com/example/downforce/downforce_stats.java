@@ -52,6 +52,8 @@ public class downforce_stats extends AppCompatActivity {
             startActivity(new Intent(this, bet_f1.class));
         } else if (item.getItemId() == R.id.action_ai_chat) {
             startActivity(new Intent(this, AiChatActivity.class));
+        } else if (item.getItemId() == R.id.wrapped) {
+            startActivity(new Intent(this, WrappedActivity.class));
         }
         return super.onOptionsItemSelected(item);
     }

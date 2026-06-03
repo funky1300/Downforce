@@ -91,9 +91,16 @@ public class BetResolver {
     private void processBets(List<CompletedRace> completedRaces, List<DocumentSnapshot> betDocs) {
         Map<String, DocumentSnapshot> unresolvedByRaceName = new HashMap<>();
         Set<String> handledRaceNames = new HashSet<>();
+        List<DocumentSnapshot> unresolvedChampBets = new ArrayList<>();
 
         for (DocumentSnapshot doc : betDocs) {
             String docId = doc.getId();
+            if (docId.startsWith("champ_")) {
+                if (!Boolean.TRUE.equals(doc.getBoolean("resolved"))) {
+                    unresolvedChampBets.add(doc);
+                }
+                continue;
+            }
             if (!docId.startsWith("race_")) continue;
 
             String raceName = doc.getString("raceName");
@@ -128,19 +135,23 @@ public class BetResolver {
                 int points = calculatePoints(actual);
                 totalDelta += points;
                 updates.add(new BetUpdate(betDoc.getReference(), points, actual,
-                        race.raceName, driverName != null ? driverName : "", predicted, false));
+                        race.raceName, driverName != null ? driverName : "", predicted, false, false));
 
             } else if (!handledRaceNames.contains(key)) {
                 totalDelta -= 3;
                 DocumentReference sentinelRef = db.collection("users").document(uid)
                         .collection("bets").document("race_nobet_r" + race.round);
                 updates.add(new BetUpdate(sentinelRef, -3, 0,
-                        race.raceName, "No bet placed", 0, true));
+                        race.raceName, "No bet placed", 0, true, false));
             }
         }
 
         if (!updates.isEmpty()) {
             applyChanges(updates, totalDelta);
+        }
+
+        if (!unresolvedChampBets.isEmpty()) {
+            tryResolveChampionshipBets(unresolvedChampBets);
         }
     }
 
@@ -177,11 +188,100 @@ public class BetResolver {
         }).addOnFailureListener(e -> showError());
     }
 
+    private void tryResolveChampionshipBets(List<DocumentSnapshot> champBets) {
+        String url = "https://api.jolpi.ca/ergast/f1/2026/driverstandings.json";
+        StringRequest request = new StringRequest(Request.Method.GET, url,
+                response -> {
+                    try {
+                        JSONObject mrData = new JSONObject(response).getJSONObject("MRData");
+                        JSONArray standingsLists = mrData.getJSONObject("StandingsTable")
+                                .getJSONArray("StandingsLists");
+                        if (standingsLists.length() == 0) return;
+
+                        JSONObject standingsList = standingsLists.getJSONObject(0);
+                        int round = standingsList.optInt("round", 0);
+                        // Only resolve at end of season (all 24 rounds complete)
+                        if (round < 24) return;
+
+                        JSONObject champEntry = standingsList.getJSONArray("DriverStandings").getJSONObject(0);
+                        JSONObject champDriver = champEntry.getJSONObject("Driver");
+                        String driverChampion = (champDriver.optString("givenName") + " "
+                                + champDriver.optString("familyName")).trim();
+
+                        fetchConstructorChampionAndResolve(champBets, driverChampion);
+                    } catch (Exception ignored) {}
+                },
+                error -> {});
+        queue.add(request);
+    }
+
+    private void fetchConstructorChampionAndResolve(List<DocumentSnapshot> champBets, String driverChampion) {
+        String url = "https://api.jolpi.ca/ergast/f1/2026/constructorstandings.json";
+        StringRequest request = new StringRequest(Request.Method.GET, url,
+                response -> {
+                    try {
+                        JSONObject mrData = new JSONObject(response).getJSONObject("MRData");
+                        JSONArray standingsLists = mrData.getJSONObject("StandingsTable")
+                                .getJSONArray("StandingsLists");
+                        if (standingsLists.length() == 0) return;
+
+                        String constructorChampion = standingsLists.getJSONObject(0)
+                                .getJSONArray("ConstructorStandings")
+                                .getJSONObject(0)
+                                .getJSONObject("Constructor")
+                                .optString("name", "").trim();
+
+                        applyChampionshipResults(champBets, driverChampion, constructorChampion);
+                    } catch (Exception ignored) {}
+                },
+                error -> {});
+        queue.add(request);
+    }
+
+    private void applyChampionshipResults(List<DocumentSnapshot> champBets, String driverChampion, String constructorChampion) {
+        List<BetUpdate> updates = new ArrayList<>();
+        int totalDelta = 0;
+
+        for (DocumentSnapshot doc : champBets) {
+            String champType = doc.getString("champType");
+            String predictedWinner = doc.getString("predictedWinner");
+            if (champType == null || predictedWinner == null) continue;
+
+            String actual = champType.toLowerCase().contains("driver") ? driverChampion : constructorChampion;
+            int points = predictedWinner.trim().equalsIgnoreCase(actual) ? 25 : 0;
+            totalDelta += points;
+            updates.add(new BetUpdate(doc.getReference(), points, 0,
+                    champType, predictedWinner, 0, false, true));
+        }
+
+        if (updates.isEmpty()) return;
+
+        final int finalDelta = totalDelta;
+        DocumentReference userRef = db.collection("users").document(uid);
+        db.runTransaction(transaction -> {
+            DocumentSnapshot userDoc = transaction.get(userRef);
+            long currentPoints = userDoc.getLong("points") != null ? userDoc.getLong("points") : 0;
+            for (BetUpdate u : updates) {
+                transaction.update(u.ref, "resolved", true, "pointsAwarded", u.pointsAwarded);
+            }
+            transaction.update(userRef, "points", currentPoints + finalDelta);
+            return null;
+        }).addOnSuccessListener(v -> {
+            for (BetUpdate u : updates) {
+                sendNotification(u);
+            }
+        }).addOnFailureListener(e -> showError());
+    }
+
     private void sendNotification(BetUpdate u) {
         String title, message;
         if (u.isSentinel) {
             title = u.raceName;
             message = "No bet placed — -3 pts";
+        } else if (u.isChampBet) {
+            String pts = u.pointsAwarded > 0 ? "+" + u.pointsAwarded : "0";
+            title = u.raceName + " resolved";
+            message = u.driverName + " — " + pts + " pts";
         } else {
             String pts = u.pointsAwarded >= 0 ? "+" + u.pointsAwarded : String.valueOf(u.pointsAwarded);
             title = u.raceName + " resolved";
@@ -223,9 +323,11 @@ public class BetResolver {
         final String driverName;
         final int predictedPosition;
         final boolean isSentinel;
+        final boolean isChampBet;
 
         BetUpdate(DocumentReference ref, int pointsAwarded, int actualPosition,
-                  String raceName, String driverName, int predictedPosition, boolean isSentinel) {
+                  String raceName, String driverName, int predictedPosition,
+                  boolean isSentinel, boolean isChampBet) {
             this.ref = ref;
             this.pointsAwarded = pointsAwarded;
             this.actualPosition = actualPosition;
@@ -233,6 +335,7 @@ public class BetResolver {
             this.driverName = driverName;
             this.predictedPosition = predictedPosition;
             this.isSentinel = isSentinel;
+            this.isChampBet = isChampBet;
         }
     }
 }
