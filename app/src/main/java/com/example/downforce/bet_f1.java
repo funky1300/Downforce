@@ -319,8 +319,10 @@ public class bet_f1 extends AppCompatActivity {
                             String raceName = doc.getString("raceName");
                             String driverName = doc.getString("driverName");
                             Long pos = doc.getLong("predictedPosition");
-                            addBetRow(raceBetsContainer,
-                                    raceName + " — " + driverName + " P" + pos, status);
+                            String label = (pos != null)
+                                    ? raceName + " — " + driverName + " P" + pos
+                                    : raceName + " — " + driverName;
+                            addBetRow(raceBetsContainer, label, status);
 
                         } else if (docId.startsWith("champ_")) {
                             champCount++;

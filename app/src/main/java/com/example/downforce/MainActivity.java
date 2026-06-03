@@ -133,6 +133,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         races = new ArrayList<>();
         fetchRacesAPI();
 
+        com.google.firebase.auth.FirebaseUser resolveUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+        if (resolveUser != null) {
+            new BetResolver(this, resolveUser.getUid()).resolve();
+        }
+
 
 
         try {
