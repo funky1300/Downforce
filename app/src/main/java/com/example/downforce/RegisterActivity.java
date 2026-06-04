@@ -120,6 +120,7 @@ public class RegisterActivity extends AppCompatActivity {
         String email = etEmail.getText() != null ? etEmail.getText().toString().trim() : "";
         String password = etPassword.getText() != null ? etPassword.getText().toString().trim() : "";
         String confirm = etConfirmPassword.getText() != null ? etConfirmPassword.getText().toString().trim() : "";
+        Toast.makeText(this, "Plase wait...", Toast.LENGTH_SHORT).show();
 
         if (TextUtils.isEmpty(name) || TextUtils.isEmpty(email) ||
                 TextUtils.isEmpty(password) || TextUtils.isEmpty(confirm)) {
@@ -134,16 +135,19 @@ public class RegisterActivity extends AppCompatActivity {
             Toast.makeText(this, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show();
             return;
         }
-
+        Toast.makeText(this, "Plase wait...", Toast.LENGTH_SHORT).show();
         btnRegister.setEnabled(false);
         auth.createUserWithEmailAndPassword(email, password)
                 .addOnSuccessListener(result -> {
+                    Toast.makeText(this, "Plase wait...", Toast.LENGTH_SHORT).show();
                     FirebaseUser user = result.getUser();
                     if (user == null) return;
                     if (selectedImageUri != null) {
                         uploadPhotoAndSave(user, name, email);
                     } else {
                         saveUserToFirestore(user, name, email, null);
+                        Toast.makeText(this, "Plase wait...", Toast.LENGTH_SHORT).show();
+
                     }
                 })
                 .addOnFailureListener(e -> {
