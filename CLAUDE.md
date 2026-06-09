@@ -37,8 +37,6 @@ Single flat package, activity-centric with no fragments and no MVVM/MVP. Firebas
 - `RaceActionReceiver` — Watched/Skipped notification buttons → `SharedPreferences` `race_history`
 - `BootReceiver` — re-schedules future alarms after reboot using `goAsync()` + Volley
 
-`RaceAdapter.java` exists but is dead code — `MainActivity` inflates cards manually.
-
 ## APIs
 
 | Source | URL | Used for |

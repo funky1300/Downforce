@@ -193,9 +193,6 @@ All three originally planned features are now implemented:
 - `race.getId() * 10` = pre-race reminder (10 min before endDate)
 - `race.getId() * 10 + 1` = post-race "Did you watch?" (2 hrs after endDate)
 
-### Dead code
-- `RaceAdapter.java` exists but is unused — MainActivity inflates race cards manually into GridLayout
-
 ---
 
 ## Bagrut Section Mapping
