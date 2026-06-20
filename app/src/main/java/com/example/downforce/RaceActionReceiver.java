@@ -7,6 +7,19 @@ import android.content.SharedPreferences;
 import android.app.NotificationManager;
 import android.widget.Toast;
 
+/**
+ * RaceActionReceiver — BroadcastReceiver #2 of 3.
+ *
+ * PURPOSE (why): handles the "Watched" / "Skipped" buttons on the post-race
+ * notification, so the user can log whether they watched without opening the app.
+ *
+ * HOW (how): each button is a broadcast PendingIntent with a different action.
+ * onReceive() reads the action and saves "watched"/"skipped" to SharedPreferences
+ * ("race_history", key race_{id}), then cancels the notification. WrappedActivity
+ * later reads these values.
+ *
+ * Bagrut: BroadcastReceiver (req 10) + SharedPreferences (req 10).
+ */
 public class RaceActionReceiver extends BroadcastReceiver {
 
     public static final String ACTION_WATCHED = "com.example.downforce.RACE_WATCHED";

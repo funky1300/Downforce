@@ -52,6 +52,21 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 
 
+/**
+ * MainActivity — the home screen and navigation hub.
+ *
+ * PURPOSE (why): shows the full 2026 race calendar, highlights the next race
+ * with a live countdown, and is the gateway to every other screen via the menu.
+ * It also triggers automatic bet resolution and season reset on launch.
+ *
+ * HOW (how): fetchRacesAPI() pulls the calendar from OpenF1 (Volley) and builds
+ * a card per race manually into a GridLayout. A CountDownTimer ticks every second.
+ * scheduleRaceNotifications() registers AlarmManager alarms per race. onCreate
+ * also calls checkSeasonReset() and new BetResolver(...).resolve().
+ *
+ * Bagrut: API download (req 6), CountDownTimer (req 10), menu (req 13),
+ * AlarmManager (req 6).
+ */
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private CountDownTimer timer;
     private TextView raceTextView;

@@ -20,6 +20,19 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.Map;
 
+/**
+ * WrappedActivity — a personal "Wrapped"-style summary screen.
+ *
+ * PURPOSE (why): shows the user their season at a glance: points, races
+ * watched/skipped, bets placed/won, win rate, and missed races.
+ *
+ * HOW (how): combines TWO storage sources. loadWatchHistory() counts
+ * watched/skipped from SharedPreferences ("race_history"). loadPointsAndBets()
+ * reads Firestore: points from the user doc, and counts bets from the /bets
+ * sub-collection (race_ docs = placed, race_nobet_ docs = missed races).
+ *
+ * Bagrut: SharedPreferences (req 10) + Firestore read (req 7).
+ */
 public class WrappedActivity extends AppCompatActivity {
 
     private TextView textPoints, textWatched, textSkipped;

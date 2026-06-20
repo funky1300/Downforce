@@ -24,9 +24,27 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+/**
+ * AiChatActivity — the AI chat screen (advanced topic).
+ *
+ * PURPOSE (why): lets the user ask free-text F1 questions and get answers.
+ *
+ * HOW (how): first fetchF1ContextAndAsk() pulls the latest race result from
+ * Jolpica and builds a short text "context". sendToGroq() then builds a request
+ * with a system message (including that live context, so the model has current
+ * 2026 data instead of its old training data) plus the user message, and POSTs
+ * it with an "Authorization: Bearer {key}" header. The answer is read from
+ * choices[0].message.content.
+ *
+ * NOTE: askGemini() is named after an earlier version; it actually calls Groq
+ * (model llama-3.1-8b-instant). The API key must be in the GROQ_API_KEY string
+ * itself (not just in a comment) for the chat to work.
+ *
+ * Bagrut: Artificial Intelligence / server-side API (req 9).
+ */
 public class AiChatActivity extends AppCompatActivity {
 
-    private static final String GROQ_API_KEY = ""; // get free key at console.groq.com
+    private static final String GROQ_API_KEY = ""; //
     private static final String GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
     private EditText editQuestion;

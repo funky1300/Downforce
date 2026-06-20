@@ -12,12 +12,27 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.widget.EditText;
 import com.google.firebase.auth.FirebaseAuth;
 
+/**
+ * LoginActivity — the app's launcher screen.
+ *
+ * PURPOSE (why): the entry gate. Authenticates existing users and keeps them
+ * logged in between sessions, so they don't have to sign in every time.
+ *
+ * HOW (how): Firebase Auth email/password. onCreate checks getCurrentUser();
+ * if already signed in it skips straight to MainActivity. The register flow uses
+ * an ActivityResultLauncher (new format) — when RegisterActivity returns RESULT_OK
+ * we move on to Main.
+ *
+ * Bagrut: Firebase Auth (req 7) + ActivityResultLauncher new format (req 6).
+ */
 public class LoginActivity extends AppCompatActivity {
 
     private FirebaseAuth auth;
     private EditText etEmail, etPassword;
     private Button btnLogin;
 
+    // ActivityResultLauncher (new format): opens RegisterActivity and listens for
+    // its result. If registration succeeded (RESULT_OK) we go straight to Main.
     private final ActivityResultLauncher<Intent> registerLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == RESULT_OK) {

@@ -12,6 +12,18 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * MapsActivity — shows a circuit's location on Google Maps (advanced topic).
+ *
+ * PURPOSE (why): displays where a race is held on an interactive map.
+ *
+ * HOW (how): receives the race name/location via Intent extras. CIRCUIT_COORDS
+ * is a static HashMap of hardcoded coordinates for the 24 circuits.
+ * findCircuitCoords() matches the name, then onMapReady() drops a marker and
+ * moves the camera there. Uses a SupportMapFragment (the project's one Fragment).
+ *
+ * Bagrut: Google Maps (req 9).
+ */
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;

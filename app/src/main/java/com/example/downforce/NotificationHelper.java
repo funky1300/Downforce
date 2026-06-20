@@ -13,6 +13,19 @@ import androidx.core.app.NotificationCompat;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * NotificationHelper — central helper for all notifications (not an Activity).
+ *
+ * PURPOSE (why): one place that knows how to create the notification channel,
+ * schedule a future notification, and send an immediate one.
+ *
+ * HOW (how): scheduleNotification() uses AlarmManager.setExactAndAllowWhileIdle
+ * with a PendingIntent pointing at NotificationReceiver, so the system wakes the
+ * app at the right time even when closed. build() assembles the actual
+ * Notification including the Watched/Skipped action buttons.
+ *
+ * Bagrut: AlarmManager + Notification (req 6).
+ */
 public class NotificationHelper {
 
     public static final String CHANNEL_ID = "downforce_races";

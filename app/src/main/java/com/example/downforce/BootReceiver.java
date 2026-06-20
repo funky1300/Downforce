@@ -15,6 +15,19 @@ import org.json.JSONObject;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * BootReceiver — BroadcastReceiver #3 of 3.
+ *
+ * PURPOSE (why): Android deletes all AlarmManager alarms when the device reboots.
+ * This re-schedules every future race notification after a restart.
+ *
+ * HOW (how): listens for ACTION_BOOT_COMPLETED, re-fetches the calendar from
+ * OpenF1, and re-registers the alarms. Uses goAsync() to keep the receiver alive
+ * while the network call runs (onReceive normally must return quickly), then
+ * pendingResult.finish() when done.
+ *
+ * Bagrut: BroadcastReceiver (req 10).
+ */
 public class BootReceiver extends BroadcastReceiver {
 
     @Override

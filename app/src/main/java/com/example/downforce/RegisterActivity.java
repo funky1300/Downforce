@@ -25,6 +25,20 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * RegisterActivity — creates a new account with a profile picture.
+ *
+ * PURPOSE (why): sign-up screen. Demonstrates using all THREE Firebase parts
+ * together (Auth + Firestore + Storage) plus camera & gallery.
+ *
+ * HOW (how): three ActivityResultLaunchers (camera permission, take picture,
+ * pick from gallery). On register: createUser (Auth) -> upload photo to Storage
+ * -> save the user document to Firestore -> setResult(RESULT_OK) back to Login.
+ * FileProvider is used to give the camera a safe content:// URI for the photo.
+ *
+ * Bagrut: Camera & Gallery (req 10), Firebase Auth/Firestore/Storage (req 7),
+ * ActivityResultLauncher new format (req 6).
+ */
 public class RegisterActivity extends AppCompatActivity {
 
     private FirebaseAuth auth;
@@ -100,8 +114,8 @@ public class RegisterActivity extends AppCompatActivity {
                     } else {
                         galleryLauncher.launch("image/*");
                     }
-                })
-                .show();
+                }).show();
+
     }
 
     private void launchCamera() {

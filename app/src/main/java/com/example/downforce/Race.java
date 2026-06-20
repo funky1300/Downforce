@@ -7,6 +7,18 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * Race — the data model for a single race (a plain POJO, not an Activity).
+ *
+ * PURPOSE (why): represents one race's data and keeps it separate from the
+ * Activities — this is the logic/UI separation (OOP) the bagrut asks for.
+ *
+ * HOW (how): plain fields + getters. Dates are ZonedDateTime; parseDate() reads
+ * the ISO format, and getStartDate()/getEndDate() convert from UTC to the
+ * device's local time (handling daylight-saving automatically).
+ *
+ * Bagrut: OOP / separation of logic and display (req 12).
+ */
 public class Race {
     public int id;
     public String name;

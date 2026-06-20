@@ -29,6 +29,19 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+/**
+ * downforce_stats — the statistics screen.
+ *
+ * PURPOSE (why): shows driver standings, constructor standings, the last race
+ * results + fastest lap, and a leaderboard comparing all users in the app.
+ *
+ * HOW (how): three Jolpica API calls (driverstandings, constructorstandings,
+ * last/results), each parsing the nested JSON and building table rows in code.
+ * loadLeaderboard() READS Firestore: all users ordered by points descending;
+ * tapping a row opens a dialog with that user's bets.
+ *
+ * Bagrut: API (req 6), Firestore read (req 7), dialogs (req 13).
+ */
 public class downforce_stats extends AppCompatActivity {
 
     private LinearLayout driverStandingsContainer, constructorStandingsContainer;

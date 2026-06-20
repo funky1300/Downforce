@@ -8,6 +8,17 @@ import android.content.Intent;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * NotificationReceiver — BroadcastReceiver #1 of 3.
+ *
+ * PURPOSE (why): turns a scheduled alarm into a visible notification.
+ *
+ * HOW (how): when the AlarmManager alarm fires, the system sends a broadcast
+ * here. onReceive() reads the title/message/buttons from the Intent extras and
+ * builds + shows the notification via NotificationHelper.build().
+ *
+ * Bagrut: BroadcastReceiver (req 10) + Notification (req 6).
+ */
 public class NotificationReceiver extends BroadcastReceiver {
 
     public static final String EXTRA_TITLE = "title";

@@ -22,6 +22,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * BetResolver — the scoring engine (the most complex class). Not an Activity.
+ *
+ * PURPOSE (why): automatically settles bets that haven't been scored yet. It
+ * compares each prediction to the real race result, awards points, and penalises
+ * races the user didn't bet on. Runs on every launch from MainActivity.onCreate.
+ *
+ * HOW (how):
+ *   resolve()       -> fetch all 2026 results from Jolpica (Volley).
+ *   parseResults()  -> build a Map<driverName, finishPosition> per race.
+ *   loadUserBets()  -> read the user's /bets sub-collection from Firestore.
+ *   processBets()   -> for each finished race: if there is an unresolved bet,
+ *                      score it; if there is none, create a -3 "sentinel" doc.
+ *   applyChanges()  -> commit every update in ONE Firestore transaction (atomic:
+ *                      read current points -> update each bet -> add total delta).
+ *   tryResolveChampionshipBets() -> only at round 24 (season end): +25 if correct.
+ *
+ * Data structures: HashMap (driver->pos), List/ArrayList (bets/updates),
+ * HashSet (handled races), inner classes CompletedRace and BetUpdate.
+ *
+ * Bagrut: remote DB read+write (req 7), API (req 6), advanced logic/transaction,
+ * data structures (req 15).
+ */
 public class BetResolver {
 
     private final Context context;
@@ -155,6 +178,12 @@ public class BetResolver {
         }
     }
 
+    /**
+     * Commits all bet updates atomically in one Firestore transaction.
+     * A transaction is used (not a plain update) because we READ the current
+     * points and then WRITE a new value — the transaction guarantees no other
+     * write slips in between, so points can't be double-counted or overwritten.
+     */
     private void applyChanges(List<BetUpdate> updates, int totalDelta) {
         DocumentReference userRef = db.collection("users").document(uid);
 
@@ -290,6 +319,7 @@ public class BetResolver {
         NotificationHelper.sendImmediateNotification(context, title, message, null);
     }
 
+    /** Scoring table: P1=+10, P2=+6, P3=+3, P4=0, P5-P10=-2, P11+/DNF=-4. */
     private int calculatePoints(int actualPos) {
         if (actualPos == 1) return 10;
         if (actualPos == 2) return 6;

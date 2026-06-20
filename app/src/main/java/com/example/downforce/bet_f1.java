@@ -39,6 +39,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * bet_f1 — the betting screen.
+ *
+ * PURPOSE (why): lets the user predict a driver's finishing position in the next
+ * race, and predict the season champions. This is the main WRITE to the database.
+ *
+ * HOW (how): fetchNextRaceAndDrivers() finds the next race and loads the driver
+ * list from OpenF1 (with a hardcoded fallback if offline). Spinners pick the
+ * driver/position. placeRaceBet() writes to /users/{uid}/bets/race_{raceId};
+ * placeChampBet() writes champ_{type}. loadExistingBets() shows all bets with a
+ * Pending / +pts / -pts status.
+ *
+ * Bagrut: Firestore write (req 7), controls/Spinners (req 5), API (req 6).
+ */
 public class bet_f1 extends AppCompatActivity {
 
     private TextView textPoints, textBetCount, textNoRaceBets, textNoChampBets;
